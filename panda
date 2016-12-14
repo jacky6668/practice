@@ -4,7 +4,6 @@ import os
 import sys
 import json
 from collections import defaultdict
-import pdb
 
 def dump_result(fp):
     job = json.load(fp)
@@ -31,18 +30,6 @@ def walk_result(direct):
             with open(path) as fp:
                 r = dump_result(fp)
                 result[f].append(r)
-    #pdb.set_trace()
-    """
-    sum = {}
-    sum_r_iops = 0
-    for key,value in result.items():
-        for x in value:
-            sum_r_iops += x["r_iops"]
-            sum["sum_r_iops"] = sum_r_iops
-            print sum_r_iops
-            print sum
-        print sum
-    """
 
     return result
 
