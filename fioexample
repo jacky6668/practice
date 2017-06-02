@@ -1,0 +1,4 @@
+
+nohup fio -filename=/dev/sdf -direct=1 -iodepth=128 -thread -rw=randrw -bssplit=4k/20:8K/20:16K/20:64k/20:128k/10:512k/10 -ioengine=libaio -group_reporting -name=mytest -randrepeat=0 -time_based -runtime=3000000 & 
+
+nohup fio -direct=1 -bssplit=4k/20:8K/20:16K/20:64k/20:128k/10:512k/10 -iodepth=128 -thread -rw=randrw -ioengine=rbd -group_reporting -name=asdf -numjobs=8 -runtime=3000000 -clientname=admin -pool=pool-f7fc119cd5c34e1083e0db27e44ed589 -rbdname=img_v2_2 &
