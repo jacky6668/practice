@@ -1,0 +1,11 @@
+[Unit]
+Description=process_exporter - Exporter for process metrics.
+After=network.target
+
+[Service]
+Type=simple
+
+User=root
+Group=root
+
+ExecStart=/opt/prometheus/process_exporter/process-exporter -config.path /opt/prometheus/process_exporter/config.yml

@@ -1,0 +1,6 @@
+---
+ansible_dir: /root
+installer_dir: "{{ ansible_dir }}/xsky-installer"
+build_dir: "{{ installer_dir}}/build"
+ver: "{{ version }}"
+buildmode: "{{ mode }}"

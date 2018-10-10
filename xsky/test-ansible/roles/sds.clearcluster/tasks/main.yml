@@ -1,0 +1,153 @@
+---
+- name: Stop ctdb
+  shell: docker exec sds-nas systemctl stop ctdb
+  ignore_errors: yes
+- name: Stop service
+  systemd: name={{ item }} state=stopped enabled=no
+  with_items:
+    - ceph.target
+    - xmsd
+    - dpgd
+    - sds-snmpd
+    - postgresql-9.2
+  ignore_errors: yes
+- name: Stop xdc
+  service: name={{ item }} state=stopped
+  with_items:
+    - xdc
+  ignore_errors: yes
+- name: Kill xdcd
+  shell: ps -ef | grep xdc | grep -v grep | grep -v run.sh | awk '{print $2}' | xargs -I{} kill -9 {}
+- name: Wait for xdc to stop
+  wait_for: timeout=15
+- name: cleanup xdc
+  script: ./scripts/xdc_cleanup.sh
+  ignore_errors: yes
+- name: Delete xdc config
+  file: path=/etc/{{ item }}/xdc_config.json state=absent
+  with_items:
+    - xdc
+- name: Remove kernel modules used by xdc
+  command: rmmod {{ item }}
+  with_items:
+    - iscsi_target_mod
+    - tcm_loop_mod
+    - tcm_qla2xxx_mod
+    - qla2xxx
+    - btree
+    - target_core_user_mod
+    - target_core_mod
+  ignore_errors: yes
+- name: Stop xdcshutdown
+  service: name={{ item }} state=stopped
+  with_items:
+    - xdcshutdown
+  ignore_errors: yes
+- name: Umount xdc proxy tmpfs
+  mount: name=/opt/{{ item }}/rbd_proxy_tmpfs src=tmpfs fstype=tmpfs state=unmounted
+  with_items:
+    - sds/xdc
+- name: logout iscsi target
+  shell: iscsiadm -m node --logout ALL
+  ignore_errors: yes
+- name: delete iscsi target
+  shell: iscsiadm -m node -o delete
+  ignore_errors: yes
+- name: delete scsi device
+  shell: lsblk -o NAME,VENDOR,MODEL | grep XSKY | awk '{print $1}' | xargs -I{} bash -c "echo 1 > /sys/block/{}/device/delete"
+  ignore_errors: yes
+- name: kill processes
+  shell: ps -ef | grep {{ item }} | grep -v grep | grep -v run.sh | awk '{print $2}' | xargs -I{} kill -9 {}
+  with_items:
+    - ceph-create-keys
+    - ganesha
+    - ceph-osd
+    - ceph-mon
+    - ceph-mds
+  ignore_errors: yes
+- name: Uninstall sds softwares
+  command: /opt/{{ item }}/bin/purge-server
+  with_items:
+    - sds/installer
+  ignore_errors: yes
+- name: remove isolated rpm
+  shell: rpm -qa | grep {{ item }} | xargs -I{} rpm -e --nodeps {}
+  with_items:
+    - ceph
+    - xms
+    - xmd
+    - xmd-api
+    - xdc
+    - data-shield
+    - object-routing
+    - sds-snmp
+    - postgresql92
+- name: stop and remove containers
+  shell: docker stop {{ item }} && docker rm -f -v {{ item }}
+  with_items:
+    - elasticsearch
+  ignore_errors: yes
+- name: stop and remove containers
+  shell: docker ps -a -f name=^/sds-.* -q | xargs -I{} bash -c "docker stop {} && docker rm -f -v {}"
+  ignore_errors: yes
+- name: remove docker images
+  shell: docker images | grep sds[-/] | grep -v sds/ansible | awk '{print $1}' | xargs -I{} docker rmi -f {}
+  ignore_errors: yes
+- name: delete vips
+  shell: >
+    ip addr show label *{{ item }} |
+     grep {{ item }} |
+     awk '{ if ( $8 != "" ) { print $2,$8 } else { print $2,$5 } }' |
+     cut -d':' -f1 |
+     while read a b; do ip addr delete $a dev $b; done
+  with_items:
+    - vip
+    - xms
+  ignore_errors: yes
+- name: Umount ceph directory
+  shell: mount | grep {{ item }} | cut -d ' ' -f1 | xargs -I{} umount {}
+  with_items:
+    - /var/lib/ceph
+    - /sdsfs
+- name: Delete ceph data
+  file: path={{ item }} state=absent
+  with_items:
+    - /var/lib/ceph/
+    - /etc/ceph/
+- name: Delete ceph targets
+  file: path=/etc/systemd/system/{{ item }} state=absent
+  with_items:
+    - ceph-mon.target.wants
+    - ceph-mds.target.wants
+    - ceph-osd.target.wants
+    - ceph-radosgw.target.wants
+    - ceph-rbd-mirror.target.wants
+    - ceph.target.wants
+- name: Reset failed units
+  command: systemctl reset-failed
+- name: Delete logs
+  file: path=/var/log/{{ item }} state=absent
+  with_items:
+    - ceph
+    - xms
+    - xdc
+    - installer
+    - sds-installer
+    - sds
+    - data-shield
+    - sds-snmp
+- name: Delete nginx files
+  file: path={{ item }} state=absent
+  with_items:
+    - /etc/nginx/conf.d/demon.conf
+    - /etc/nginx/conf.d/xms.conf
+    - /etc/nginx/conf.d/stream
+- name: Delete opt sds
+  file: path={{ item }} state=absent
+  with_items:
+    - /opt/sds
+    - /opt/xdc
+    - /etc/xmd-api
+    - /etc/xms
+
+- include_tasks: docker-clear.yml

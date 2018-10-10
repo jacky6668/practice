@@ -1,0 +1,59 @@
+10.252.3.12x hostname=node01 private_ip=172.16.31.x
+10.252.3.12x hostname=node02 private_ip=172.16.31.x
+10.252.3.12x hostname=node03 private_ip=172.16.31.x
+10.252.3.12x hostname=node04 private_ip=172.16.31.x
+
+localhost ansible_connection=local
+
+10.0.101.x hostname=monitor_node private_ip=172.16.31.x
+
+[monitor]
+10.0.101.x
+
+[monitor:vars]
+ansible_user=root
+ansible_ssh_pass=redhat
+
+[boot]
+10.252.3.12x
+
+[others]
+10.252.3.12[4-9]
+
+[nodes:children]
+boot
+others
+
+[nodes:vars]
+ansible_user=root
+ansible_ssh_pass=redhat
+# formation_template is the formation file under files/formatin_templates/
+formation_template=host.json
+
+[log_server]
+10.0.101.51
+
+[log_server:vars]
+ansible_user=root
+ansible_ssh_pass=root
+
+[log_agents]
+10.252.3.126
+10.252.3.123
+
+10.0.11.20[7:9]
+
+10.252.3.13[2:3]
+10.252.3.135
+
+10.0.101.[92:94]
+
+10.0.101.111
+10.0.101.[118:119]
+
+10.0.101.[77:79]
+
+[log_agents:vars]
+ansible_user=root
+ansible_ssh_pass=redhat
+server=10.0.101.51

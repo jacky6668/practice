@@ -1,0 +1,14 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "SDS",
+    "timezone": "browser",
+    "rows": [
+      {
+      }
+    ],
+    "schemaVersion": 6,
+    "version": 0
+  },
+  "overwrite": true
+}

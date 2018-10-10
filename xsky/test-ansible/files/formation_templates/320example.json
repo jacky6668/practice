@@ -1,0 +1,303 @@
+{
+    "Description": "data protection cluster",
+    "Parameters" : {
+        "ClusterURL" : {
+            "Type" : "String",
+            "Value" : "http://10.0.11.36:8056/v1"
+        },
+        "AdminNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.11.0/24"
+        },
+        "PublicNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.21.0/24"
+        },
+        "PrivateNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.31.0/24"
+        },
+        "GatewayNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.21.0/24"
+        },
+        "Host1": {
+            "Type" : "Integer",
+            "Value": 1
+        },
+       "Node2" : {
+            "Type" : "String",
+            "Value": "10.0.11.37"
+        },
+        "Node3" : {
+            "Type" : "String",
+            "Value": "10.0.11.38"
+        }
+    },
+    "Resources" : [
+        {
+            "Name": "bootnode",
+            "Type" : "BootNode",
+            "Properties" : {
+                "AdminNetwork" : {"Ref" : "AdminNetwork"},
+                "PublicNetwork" : {"Ref" : "PublicNetwork"},
+                "PrivateNetwork" : {"Ref" : "PrivateNetwork"},
+                "GatewayNetwork" : {"Ref" : "GatewayNetwork"},
+                "InstallerPath" : "/opt/sds/installer/sds-release"
+            }
+        },
+        {
+            "Name": "admin",
+            "Type": "User",
+            "Properties": {
+                "Name": "admin",
+                "Email": "admin@xsky.com",
+                "Password": "admin",
+                "Enabled": true
+            },
+            "Sleep": 5
+        },
+        {
+            "Name": "token",
+            "Type" : "Token",
+            "Properties" : {
+                "Name" : "admin",
+                "Password" : "admin"
+            }
+        },
+        {
+            "Name" : "Host2",
+            "Type" : "Host",
+            "Properties" : {
+               "AdminIP" : {"Ref" : "Node2"},
+               "Roles" : "block_storage_gateway"
+            },
+            "Sleep" : 5
+        },
+        {
+            "Name" : "Host3",
+            "Type" : "Host",
+            "Properties" : {
+               "AdminIP" : {"Ref" : "Node3"},
+               "Roles" : "block_storage_gateway"
+            },
+            "Sleep" : 5
+        },
+        {
+            "Name" : "HDDDiskList",
+            "Type" : "DiskList",
+            "Properties" : {
+                "Used" : false,
+                "DiskType" : "HDD",
+		"Model" : "SSD"
+            }
+        },
+        {
+            "Name" : "HDDOsds",
+            "Type" : "Osds",
+            "Properties" : {
+                "DiskIDs" : {"Ref" : "HDDDiskList"}
+            },
+            "Sleep" : 5
+        },
+        {
+            "Name" : "HDDPool",
+            "Type" : "Pool",
+            "Properties" : {
+                "Name" : "HDDPool",
+                "ProtectionDomainID" : 1,
+                "PoolType" : "replicated",
+                "OsdIDs" : {"Ref" : "HDDOsds"},
+                "Size" : 2
+            }
+        },
+        {
+            "Name" : "v3-1",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v3-1",
+                "Format" : 128,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v3-2",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v3-2",
+                "Format" : 128,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v3-3",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v3-3",
+                "Format" : 128,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v3-4",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v3-4",
+                "Format" : 128,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v3-5",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v3-5",
+                "Format" : 128,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v3-6",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v3-6",
+                "Format" : 128,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v4-1",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v4-1",
+                "Format" : 129,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v4-2",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v4-2",
+                "Format" : 129,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v4-3",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v4-3",
+                "Format" : 129,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v4-4",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v4-4",
+                "Format" : 129,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v4-5",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v4-5",
+                "Format" : 129,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "v4-6",
+            "Type" : "BlockVolume",
+            "Properties" : {
+                "Name" : "v4-6",
+                "Format" : 129,
+                "PoolID" : {"Ref" : "HDDPool"},
+                "Size" : 102400000000
+            }
+        },
+        {
+            "Name" : "36_local",
+            "Type" : "AccessPath",
+            "Properties" : {
+                "Chap" : false,
+                "HostIDs" : [{"Ref": "Host1"}],
+                "MappingGroups" : [
+                    {
+                        "BlockVolumeIDs" : [
+                             {"Ref" : "v3-1"},
+                             {"Ref" : "v4-1"}
+                        ]
+                    }
+                ],
+                "Name" : "36_local",
+                "Type" : "Local"
+            }
+        },
+        {
+            "Name" : "37_local",
+            "Type" : "AccessPath",
+            "Properties" : {
+                "Chap" : false,
+                "HostIDs" : [{"Ref": "Host2"}],
+                "MappingGroups" : [
+                    {
+                        "BlockVolumeIDs" : [
+                             {"Ref" : "v3-2"},
+                             {"Ref" : "v4-2"}
+                        ]
+                    }
+                ],
+                "Name" : "37_local",
+                "ProtectionDomainID" : 1,
+                "Type" : "Local"
+            }
+        },
+        {
+            "Name" : "110",
+            "Type" : "ClientGroup",
+            "Properties" : {
+                "Clients" : [
+                    {"Code" : "iqn.1991-05.com.microsoft:win-c10i06lqgsl"}
+                ],
+                "Name" : "110",
+                "Type" : "iSCSI"
+            }
+        },
+        {
+            "Name" : "iscsi",
+            "Type" : "AccessPath",
+            "Properties" : {
+                "Chap" : false,
+                "HostIDs" : [{"Ref": "Host1"},{"Ref": "Host2"},{"Ref": "Host3"}],
+                "MappingGroups" : [
+                    {
+                        "BlockVolumeIDs" : [
+                              {"Ref" : "v3-3"},
+                              {"Ref" : "v4-3"}
+                        ],
+                        "ClientGroupID" : {"Ref": "110"}
+                    }
+                ],
+                "Name" : "iscsi",
+                "ProtectionDomainID" : 1,
+                "Type" : "iSCSI"
+            }
+        }
+   ]
+}

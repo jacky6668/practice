@@ -1,0 +1,10 @@
+---
+- name: deploy log server
+  hosts: log_server
+  roles:
+    - sds.log-server
+
+- name: deploy log agent
+  hosts: log_agents
+  roles:
+    - sds.log-agent

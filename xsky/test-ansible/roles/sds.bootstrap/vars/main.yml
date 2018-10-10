@@ -1,0 +1,3 @@
+---
+installer_dir: /root/xsky-installer/build
+package_dir: "{{ installer_dir }}/package"

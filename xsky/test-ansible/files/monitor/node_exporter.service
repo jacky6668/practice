@@ -1,0 +1,15 @@
+[Unit]
+Description=node_exporter - Exporter for machine metrics.
+After=network.target
+
+[Service]
+Type=simple
+
+#ExecStartPre=/bin/sh -c  " mkdir -p '/var/run/prometheus' '/var/log/prometheus' "
+#ExecStartPre=/bin/sh -c  " chown -R prometheus '/var/run/prometheus' '/var/log/prometheus' "
+#PIDFile=/var/run/prometheus/node_exporter.pid
+
+User=root
+Group=root
+
+ExecStart=/opt/prometheus/node_exporter/node_exporter

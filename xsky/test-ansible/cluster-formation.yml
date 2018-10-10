@@ -1,0 +1,5 @@
+---
+- hosts: boot
+  roles:
+    - role: sds.formation
+      template_file: "{{ formation_template }}"

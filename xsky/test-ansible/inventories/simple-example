@@ -1,0 +1,7 @@
+[nodes]
+10.252.3.xxx
+10.252.3.xxx
+
+[nodes:vars]
+ansible_user=root
+ansible_ssh_pass=redhat

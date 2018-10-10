@@ -1,0 +1,5 @@
+---
+install_dir: /root/xsky-installer
+build_dir: /root/xsky-installer/build
+ver: "{{ version }}"
+buildmode: "{{ mode }}"

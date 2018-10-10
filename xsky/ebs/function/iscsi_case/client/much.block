@@ -1,0 +1,62 @@
+#!/bin/bash
+drive=`multipath -ll|grep "XSKY"|awk '{print $3}'`
+bs=(4K 32K 64K 128K 512K 1024k 2048k 4096k 8192k 5k 7k 1020k 11k)
+#rw=(write randwrite read  randread randrw)
+rw=(write randwrite randrw)
+der_num=`multipath -ll|grep "XSKY"|wc -l`
+
+## set work
+echo "\
+[global]
+ioengine=libaio
+direct=1
+thread
+group_reporting
+norandommap=1
+randrepeat=0
+runtime=99999999
+name=test
+time_based
+continue_on_error=none
+norandommap
+" > much_lun.block
+
+sleep 2
+w=1
+while [ $w -lt $der_num ]
+do
+for i in $drive
+do
+echo "
+[work$w]
+filename=/dev/$i
+bs=4k
+rw=write
+numjobs=4
+iodepth=32
+" >> much_lun.block
+let w=$w+1
+done
+done
+
+## set bs
+for i in {1..100}
+do
+    index=$(($RANDOM%${#bs[@]}))
+    sed -i '0,/bs=4k/s//bs='${bs[$index]}'/' much_lun.block
+done
+
+## set rw
+for i in {1..100}
+do
+   index=$(($RANDOM%${#rw[@]}))
+   sed -i '0,/rw=write/s//rw='${rw[$index]}'/' much_lun.block
+done
+
+#### set drive
+#for i in $drive
+#do
+#    echo $i
+#    #sed -i '0,/filename=\/dev\/sdj/ s//filename=/dev/'$i'/' 100_lun.block
+#    #sed -i 's/filename=\/dev\/.*/filename=\/dev\/'$i'/' 100_lun.block
+#done

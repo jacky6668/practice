@@ -1,0 +1,11 @@
+---
+prometheus_root: /opt/prometheus
+prometheus_config: /opt/prometheus/prometheus.yml
+prometheus_port: 9090
+node_exporter_tmp_path: /tmp/node_exporter.tar.gz
+node_exporter_path: /opt/prometheus/node_exporter
+process_exporter_tmp_path: /tmp/process_exporter.tar.gz
+process_exporter_path: /opt/prometheus/process_exporter
+
+grafana_port: 3000
+grafana_tmp: /tmp/grafana

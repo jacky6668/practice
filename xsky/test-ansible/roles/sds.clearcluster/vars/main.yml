@@ -1,0 +1,6 @@
+---
+ansible_dir: /root/ansible
+ansible_rpm_dir: "{{ ansible_dir }}/rpm"
+ansible_key_dir: /tmp/ansible/
+custom_dir: ./custom
+iozone_rpm: iozone-3.424-2.el7.rf.x86_64.rpm

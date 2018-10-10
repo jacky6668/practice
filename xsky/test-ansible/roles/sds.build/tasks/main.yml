@@ -1,0 +1,26 @@
+---
+- name: promption
+  debug: msg= "{{ item.name }} is {{ item.val }}"
+  with_items:
+    - { name: 'Install directory', val: '{{ install_dir }}' }
+    - { name: 'Build directory', val: '{{ build_dir }}' }
+    - { name: 'version', val: '{{ ver }}' }
+    - { name: 'buildmode', val: '{{ mode }}' }
+
+- name: rm the install dir
+  file:
+    path: "{{ install_dir }}"
+    state: absent
+    force: yes
+
+#- name: copy key file
+#  copy: src=~/.ssh/id_rsa.pub dest=/root/key mode=400
+
+- name: git clone
+  git: repo=git@github.xsky.com:platform/xsky-installer
+       version={{ ver }}
+       dest={{ install_dir }}
+       force=yes
+
+- name: build packages
+  shell: ./build.sh executable=/bin/bash chdir={{ install_dir }}

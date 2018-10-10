@@ -1,0 +1,214 @@
+{
+    "Description": "data protection cluster",
+    "Parameters" : {
+        "ClusterURL" : {
+            "Type" : "String",
+            "Value" : "http://10.252.3.56:8056/v1"
+        },
+        "AdminNetwork" : {
+            "Type" : "String",
+            "Value": "10.252.3.0/24"
+        },
+        "PublicNetwork" : {
+            "Type" : "String",
+            "Value": "10.252.3.0/24"
+        },
+        "PrivateNetwork" : {
+            "Type" : "String",
+            "Value": "10.252.3.0/24"
+        },
+        "GatewayNetwork" : {
+            "Type" : "String",
+            "Value": "10.252.3.0/24"
+        },
+        "Host1": {
+            "Type" : "Integer",
+            "Value": 1
+        },
+       "Node2" : {
+            "Type" : "String",
+            "Value": "10.252.3.57"
+        },
+        "Node3" : {
+            "Type" : "String",
+            "Value": "10.252.3.58"
+        }
+    },
+    "Resources" : [
+        {
+            "Name": "bootnode",
+            "Type" : "BootNode",
+            "Properties" : {
+                "AdminNetwork" : {"Ref" : "AdminNetwork"},
+                "PublicNetwork" : {"Ref" : "PublicNetwork"},
+                "PrivateNetwork" : {"Ref" : "PrivateNetwork"},
+                "GatewayNetwork" : {"Ref" : "GatewayNetwork"},
+                "InstallerPath" : "/opt/sds/installer/sds-release"
+            }
+        },
+        {
+            "Name": "admin",
+            "Type": "User",
+            "Properties": {
+                "Name": "admin",
+                "Email": "admin@xsky.com",
+                "Password": "admin",
+                "Enabled": true
+            },
+            "Sleep": 5
+        },
+        {
+            "Name": "token",
+            "Type" : "Token",
+            "Properties" : {
+                "Name" : "admin",
+                "Password" : "admin"
+            }
+        },
+        {
+            "Name" : "Host2",
+            "Type" : "Host",
+            "Properties" : {
+               "AdminIP" : {"Ref" : "Node2"},
+               "Roles" : ["admin","block_storage_gateway","monitor"]
+            },
+            "Sleep" : 5
+        },
+        {
+            "Name" : "Host3",
+            "Type" : "Host",
+            "Properties" : {
+               "AdminIP" : {"Ref" : "Node3"},
+               "Roles" : ["admin","block_storage_gateway","monitor"]
+            },
+            "Sleep" : 5
+        },
+	    {
+            "Name": "SSDDiskList1",
+            "Type": "DiskList",
+            "Properties": {
+                "Used": false,
+                "DiskType": "SSD",
+                "HostIDs": {"Ref" : "Host1"}
+            }
+        },
+	    {
+            "Name": "SSDDiskList2",
+            "Type": "DiskList",
+            "Properties": {
+                "Used": false,
+                "DiskType": "SSD",
+                "HostIDs": {"Ref" : "Host2"}
+            }
+        },
+       	{
+            "Name": "SSDDiskList3",
+            "Type": "DiskList",
+            "Properties": {
+                "Used": false,
+                "DiskType": "SSD",
+                "HostIDs": {"Ref" : "Host3"}
+            }
+        },
+        {
+            "Name" : "Partitions1",
+            "Type" : "Partitions",
+            "Properties" : {
+                "DiskIDs" : {"Ref": "SSDDiskList1"},
+	            "NumPerDisk" : 3
+       	    }
+     	},
+        {
+            "Name" : "Partitions2",
+            "Type" : "Partitions",
+            "Properties" : {
+                "DiskIDs" : {"Ref": "SSDDiskList2"},
+	            "NumPerDisk" : 3
+      	    }
+     	},
+        {
+            "Name" : "Partitions3",
+            "Type" : "Partitions",
+            "Properties" : {
+                "DiskIDs" : {"Ref": "SSDDiskList3"},
+	            "NumPerDisk" : 3
+   	        }
+   	    },
+	    {
+            "Name" : "HDDDiskList1",
+            "Type" : "DiskList",
+            "Properties" : {
+                "Used" : false,
+                "DiskType" : "HDD",
+                "HostIDs": {"Ref" : "Host1"}
+            }
+        },
+	    {
+            "Name" : "HDDDiskList2",
+            "Type" : "DiskList",
+            "Properties" : {
+                "Used" : false,
+                "DiskType" : "HDD",
+                "HostIDs": {"Ref" : "Host2"}
+            }
+        },
+	    {
+            "Name" : "HDDDiskList3",
+            "Type" : "DiskList",
+            "Properties" : {
+                "Used" : false,
+                "DiskType" : "HDD",
+                "HostIDs": {"Ref" : "Host3"}
+            }
+        },
+	    {
+	    "Name" : "Hybirdosd1",
+	    "Type" : "Osds",
+	    "Properties" : {
+	        "PartitionIDs" : {"Ref" : "Partitions1"},
+	            "DiskIDs" : {"Ref" : "HDDDiskList1"},
+                "Role": "data"
+            }
+	    },
+	    {
+	    "Name" : "Hybirdosd2",
+	    "Type" : "Osds",
+	    "Properties" : {
+	        "PartitionIDs" : {"Ref" : "Partitions2"},
+	            "DiskIDs" : {"Ref" : "HDDDiskList2"},
+                "Role": "data"
+            }
+	    },
+	    {
+	    "Name" : "Hybirdosd3",
+	    "Type" : "Osds",
+	    "Properties" : {
+	        "PartitionIDs" : {"Ref" : "Partitions3"},
+	            "DiskIDs" : {"Ref" : "HDDDiskList3"},
+                "Role": "data"
+            }
+	    },
+        {
+            "Name" : "Hybirdosds",
+            "Type" : "IntegerList",
+            "Properties" : {
+                "Attributes" : [
+                    {"Ref" : "Hybirdosd1"},
+                    {"Ref" : "Hybirdosd2"},
+                    {"Ref" : "Hybirdosd3"}
+                ]
+            }
+        },
+	    {
+	    "Name" : "HybirdPool",
+	    "Type" : "Pool",
+	    "Properties" : {
+	        "name" : "HybirdPool",
+                "ProtectionDomainID" : 1,
+                "PoolType" : "replicated",
+                "OsdIDs" :  {"Ref" : "Hybirdosds"},
+                "Size" : 2
+	    }
+        }
+    ]
+}

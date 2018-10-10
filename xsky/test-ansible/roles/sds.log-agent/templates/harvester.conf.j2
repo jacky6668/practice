@@ -1,0 +1,19 @@
+exports.config = {
+  nodeName: "{{ inventory_hostname }}",
+  logStreams: {
+    "xms": [
+      "/var/log/xms/xmsd.log",
+      "/var/log/xms/beego.log"
+    ],
+    "xms-error": [
+      "/var/log/xms/xmsd-error.log",
+    ],
+    "nginx-error": [
+      "/var/log/nginx/error.log"
+    ],
+  },
+  server: {
+    host: '{{ server }}',
+    port: 28777
+  }
+}

@@ -1,0 +1,148 @@
+{
+    "Description": "data protection cluster",
+    "Parameters" : {
+        "ClusterURL" : {
+            "Type" : "String",
+            "Value" : "http://10.0.11.38:8056/v1"
+        },
+        "AdminNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.11.0/24"
+        },
+        "PublicNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.21.0/24"
+        },
+        "PrivateNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.31.0/24"
+        },
+        "GatewayNetwork" : {
+            "Type" : "String",
+            "Value": "10.0.21.0/24"
+        },
+        "Host1": {
+            "Type" : "Integer",
+            "Value": 1
+        },
+       "Node2" : {
+            "Type" : "String",
+            "Value": "10.252.3.81"
+        },
+        "Node3" : {
+            "Type" : "String",
+            "Value": "10.252.3.82"
+        }
+    },
+    "Resources" : [
+        {
+            "Name": "bootnode",
+            "Type" : "BootNode",
+            "Properties" : {
+                "AdminNetwork" : {"Ref" : "AdminNetwork"},
+                "PublicNetwork" : {"Ref" : "PublicNetwork"},
+                "PrivateNetwork" : {"Ref" : "PrivateNetwork"},
+                "GatewayNetwork" : {"Ref" : "GatewayNetwork"},
+                "InstallerPath" : "/opt/sds/installer/sds-release"
+            }
+        },
+        {
+            "Name": "admin",
+            "Type": "User",
+            "Properties": {
+                "Name": "admin",
+                "Email": "admin@xsky.com",
+                "Password": "admin",
+                "Enabled": true
+            },
+            "Sleep": 5
+        },
+        {
+            "Name": "token",
+            "Type" : "Token",
+            "Properties" : {
+                "Name" : "admin",
+                "Password" : "admin"
+            }
+        },
+        {
+            "Name" : "Host2",
+            "Type" : "Host",
+            "Properties" : {
+                "AdminIP" : {"Ref" : "Node2"},
+                "Roles" : ["admin","block_storage_gateway","monitor"]
+            },
+            "Sleep" : 5
+        },
+        {
+            "Name" : "Host3",
+            "Type" : "Host",
+            "Properties" : {
+                "AdminIP" : {"Ref" : "Node3"},
+                "Roles" : ["admin","block_storage_gateway","monitor"]
+            },
+            "Sleep" : 5
+        },
+	{
+            "Name": "HDDModify",
+            "Type": "DiskList",
+            "Properties": {
+                "Used": false,
+                "DiskType": "HDD",
+                "Model" : "XXXX"
+            }
+        },
+        {
+            "Name": "HDDModify",
+            "Type": "DiskList",
+            "Action": "Update",
+            "Properties": {
+                "DiskType": "SSD"
+            }
+        },
+	{
+            "Name": "SSDDiskList",
+            "Type": "DiskList",
+            "Properties": {
+                "Used": false,
+                "DiskType": "SSD"
+            }
+        },
+	{
+            "Name" : "Partitions",
+            "Type" : "Partitions",
+            "Properties" : {
+                "DiskIDs" : {"Ref": "SSDDiskList"},
+	        "NumPerDisk" : 3
+    	    }
+    	},
+	{
+            "Name" : "HDDDiskList",
+            "Type" : "DiskList",
+            "Properties" : {
+                "Used" : false,
+                "DiskType" : "HDD"
+            }
+        },
+	{
+	    "Name" : "Hybirdosd",
+	    "Type" : "Osds",
+	    "Properties" : {
+	        "PartitionIDs" : {"Ref" : "Partitions"},
+                "DiskIDs" : {"Ref" : "HDDDiskList"},
+                "Role": "data"
+            }
+	},
+	{
+	    "Name" : "HybirdPool",
+	    "Type" : "Pool",
+	    "Properties" : {
+	        "name" : "HybirdPool",
+                "ProtectionDomainID" : 1,
+                "PoolType" : "replicated",
+                "OsdIDs" : {"Ref" : "Hybirdosd"},
+                "Size" : 2
+	    }
+        }
+   ]
+}

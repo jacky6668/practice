@@ -1,0 +1,77 @@
+---
+- name: Clear cluster nodes
+  hosts: cluster_xmsa cluster_xmss
+  vars_files:
+    - vars/common.yml
+  tasks:
+    - name: Check if xsky-demon exists
+      stat: path=/etc/init.d/xsky-demon
+      register: service_status
+    - name: Stop xsky-demon
+      service: name=xsky-demon state=stopped
+      when: service_status.stat.exists
+    # clear xsky-xdc
+    - name: Check if xsky-xdc exists
+      stat: path=/etc/init.d/xsky-xdc
+      register: service_status
+    - name: Clear xdc kernel data
+      command: xdcadm -L at -m sys -o clean removes=/usr/bin/xdcadm
+      ignore_errors: yes
+      when: service_status.stat.exists
+    - name: Stop xsky-xdc
+      service: name=xsky-xdc state=stopped
+      when: service_status.stat.exists
+    - name: Delete xdc config
+      file: path=/etc/xsky-xdc/xdc_config.json state=absent
+    - name: Remove kernel modules used by xdc
+      modprobe: name={{ item }} state=absent
+      with_items:
+        - iscsi_target_mod
+        - tcm_loop_mod
+        - tcm_qla2xxx_mod
+        - qla2xxx
+        - btree
+        - target_core_user_mod
+        - target_core_mod
+    - name: Umount xdc proxy tmpfs
+      mount: name=/opt/xsky/xsky-xdc/rbd_proxy_tmpfs src=tmpfs fstype=tmpfs state=unmounted
+    # clear radosgw
+    - name: Stop radosgw
+      command: killall -9 radosgw
+      ignore_errors: yes
+    # clear ceph
+    - name: Stop ceph-mon and ceph-osd
+      command: killall -9 {{ item }}
+      with_items:
+        - ceph-osd
+        - ceph-mon
+      ignore_errors: yes
+    - name: Wait for ceph to stop
+      wait_for: timeout=10
+    - name: Umount osd data directory
+      shell: mount | grep /var/lib/ceph/osd | cut -d' ' -f1 | xargs -I{} umount {}
+    - name: Umount osd omap directory
+      shell: mount | grep /var/lib/ceph/omap | cut -d' ' -f1 | xargs -I{} umount {}
+    - name: Delete ceph data
+      file: path={{ item }} state=absent
+      with_items:
+        - /var/lib/ceph/mon/
+        - /var/lib/ceph/osd/
+        - /var/lib/ceph/
+        - /etc/ceph/
+    - name: Recreate ceph directory
+      file: path={{ item }} state=directory mode=0755
+      with_items:
+        - /var/lib/ceph/mon/
+        - /var/lib/ceph/osd/
+        - /var/lib/ceph/
+        - /etc/ceph/
+    - name: Delete logs
+      file: path={{ item }} state=absent
+      with_items:
+        - /var/log/ceph
+        - /var/log/xsky-demon
+        - /var/log/xsky-xdc
+        - /var/log/xsky-installer
+    - name: Uninstall XSKY softwares
+      command: /opt/xsky/xsky-installer/bin/purge-server removes=/opt/xsky/xsky-installer/bin/purge-server

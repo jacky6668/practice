@@ -1,0 +1,5 @@
+---
+- name: Clear cluster nodes
+  hosts: nodes
+  roles:
+    - role: sds.clearcluster

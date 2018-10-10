@@ -1,0 +1,169 @@
+---
+- name: Deploy Prometheus exporter
+  hosts: nodes
+  vars_files:
+    - vars/monitor.yml
+  pre_tasks:
+    - name: download node_exporter
+      get_url: 
+        url: https://github.com/prometheus/node_exporter/releases/download/v0.13.0/node_exporter-0.13.0.linux-amd64.tar.gz
+        dest: "{{ node_exporter_tmp_path }}"
+      run_once: true
+      delegate_to: 127.0.0.1
+    - name: download process_exporter
+      get_url:
+        url: https://github.com/ncabatoff/process-exporter/releases/download/v0.1.0/process-exporter-0.1.0.linux-amd64.tar.gz
+        dest: "{{ process_exporter_tmp_path }}"
+      run_once: true
+      delegate_to: 127.0.0.1
+    - name: create grafana tmp dirs
+      file: path={{ item }} state=directory
+      with_items:
+        - "{{ grafana_tmp }}"
+      run_once: true
+      delegate_to: 127.0.0.1
+  tasks:
+    - file: path={{ item }} state=absent
+      with_items:
+        - "{{ node_exporter_path }}"
+        - "{{ process_exporter_path }}"
+    - file: path={{ item }} state=directory
+      with_items:
+        - "{{ node_exporter_path }}"
+        - "{{ process_exporter_path }}"
+    - name: unarchive node_exporter
+      unarchive:
+        src: "{{ node_exporter_tmp_path }}"
+        dest: "{{ node_exporter_path }}"
+        extra_opts: "--strip-components=1"
+    - name: setup node_exporter service
+      copy: 
+        src: monitor/node_exporter.service
+        dest: /usr/lib/systemd/system
+    - name: unarchive process_exporter
+      unarchive:
+        src: "{{ process_exporter_tmp_path }}"
+        dest: "{{ process_exporter_path }}"
+        extra_opts: "--strip-components=1"
+    - name: setup process_exporter service
+      copy:
+        src: monitor/process_exporter.service
+        dest: /usr/lib/systemd/system
+    - name: copy process_exporter config
+      copy:
+        src: monitor/process_exporter_config.yml
+        dest: "{{ process_exporter_path }}/config.yml"
+    - systemd:
+        name: "{{ item }}"
+        state: restarted
+        daemon_reload: yes
+      with_items:
+        - node_exporter
+        - process_exporter
+
+
+- name: Deploy Prometheus and Grafana
+  hosts: monitor
+  vars_files:
+    - vars/monitor.yml
+  pre_tasks:
+    - block:
+      - name: install epel-release
+        yum: name="epel-release" state=latest update_cache=yes
+      - name: install softwares from yum repo
+        yum:
+          name: "{{ item }}"
+          state: installed
+        with_items:
+          - git
+          - sysstat
+          - htop
+          - vim-enhanced
+          - atop
+          - psmisc
+          - wget
+        ignore_errors: yes
+      tags: yum
+  roles:
+    - role: geerlingguy.ntp
+      ntp_timezone: Asia/Shanghai
+    - role: dochang.docker
+  tasks:
+    - name: pull docker images
+      docker_image: name={{ item }}
+      with_items:
+        - prom/prometheus
+        - grafana/grafana
+    - set_fact:
+        prometheus_url: "http://{{ inventory_hostname }}:{{ prometheus_port }}"
+        grafana_url: "http://{{ inventory_hostname }}:{{ grafana_port }}"
+
+    - block:
+      - file: path={{ prometheus_root }} state=directory
+      - name: generate prometheus config
+        template:
+          src: templates/prometheus_config.j2
+          dest: "{{ prometheus_config }}"
+      - name: create prometheus container
+        docker_container:
+          name: prometheus
+          image: prom/prometheus
+          volumes:
+            - "{{ prometheus_config }}:/etc/prometheus/prometheus.yml"
+          ports:
+            - "{{ prometheus_port }}:{{ prometheus_port }}"
+          state: started
+      tags:
+        - prometheus
+
+    - block:
+      - name: create grafana container
+        docker_container:
+          name: grafana
+          image: grafana/grafana
+          ports:
+            - "{{ grafana_port }}:{{ grafana_port }}"
+          state: started
+      - wait_for: timeout=10
+      - set_fact:
+          req_body:
+            name: sds_prometheus
+            type: prometheus
+            url: "{{ prometheus_url }}"
+            access: proxy
+      - name: add datasource to grafana
+        uri:
+          url: "{{ grafana_url }}/api/datasources"
+          body: "{{ req_body | to_json }}"
+          method: POST
+          body_format: json
+          status_code: 200
+          user: admin
+          password: admin
+          force_basic_auth: yes
+        delegate_to: 127.0.0.1
+      - set_fact:
+          req_body:
+            dashboard: "{{ lookup('file', 'monitor/grafana_sds_dashboard.json') }}"
+            inputs:
+              - name: DS_SDS_PROMETHEUS
+                pluginId: prometheus
+                type: datasource
+                value: sds_prometheus
+            overwrite: true
+      - name: add dashboard
+        uri:
+          url: "{{ grafana_url }}/api/dashboards/import"
+          body: "{{ req_body | to_json }}"
+          method: POST
+          body_format: json
+          status_code: 200
+          user: admin
+          password: admin
+          force_basic_auth: yes
+        delegate_to: 127.0.0.1
+      tags: grafana
+
+    - block:
+      - debug: msg="Visit Prometheus via {{ prometheus_url }}"
+      - debug: msg="Visit Grafana via {{ grafana_url }}, admin/admin"

@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import json
+from collections import defaultdict
+import pdb
+
+def dump_result(fp):
+    job = json.load(fp)
+    write = job["jobs"][0]["write"]
+    read= job["jobs"][0]["read"]
+    dump = {}
+    dump["w_iops"] = write["iops"]
+    dump["r_iops"] = read["iops"]
+    dump["w_lat"] = write["lat"]["mean"] / 1000
+    dump["r_lat"] = read["lat"]["mean"] / 1000
+    dump["w_bw"] = write["bw"] / 1024
+    dump["r_bw"] = read["bw"]  / 1024
+    return dump
+
+def walk_result(direct):
+    if not os.path.exists(direct):
+        raise Exception("Error: %s not exists" % direct)
+    result = defaultdict(list)
+    for root, dirs, files in os.walk(direct):
+        for f in files:
+            path = os.path.join(root, f)
+            f = f.rsplit("-", 1)[0]
+	    print path
+            with open(path) as fp:
+                r = dump_result(fp)
+                result[f].append(r)
+    #pdb.set_trace()
+    """
+    sum = {}
+    sum_r_iops = 0
+    for key,value in result.items():
+        for x in value:
+            sum_r_iops += x["r_iops"]
+            sum["sum_r_iops"] = sum_r_iops
+            print sum_r_iops
+            print sum
+        print sum
+    """
+
+    return result
+
+def sort_result(result):
+    type_map = {"write":0, "read":1, "randwrite":2, "randread":3, "randrw":4}
+    def cmp_key(x, y):
+        x = x.split("-")
+        y = y.split("-")
+        if type_map[x[0]] != type_map[y[0]]:
+            return cmp(type_map[x[0]], type_map[y[0]])
+        x, y = x[1:], y[1:]
+        for a,b in zip(x,y):
+            if a != b:
+                return cmp(a, b) 
+        return True
+
+    result = sorted(result.items(), key=lambda x:x[0], cmp=lambda x,y: cmp_key(x,y))
+    return result
+
+def avg(num):
+    return sum(num)/len(num)
+
+def csv_out(result, filename):
+    result = sort_result(result)
+    with open(filename, "w") as fp:
+        for key,value in result:
+            line = key
+            for k in ["w_iops", "w_lat", "w_bw"]:
+                line += "," + "+".join(str(x[k]) for x in value)
+            line += "," + str(sum([x["w_iops"] for x in value]))
+            line += "," + str(avg([x["w_lat"] for x in value]))
+            line += "," + str(sum([x["w_bw"] for x in value]))
+            for k in ["r_iops", "r_lat", "r_bw"]:
+                line += "," + "+".join(str(x[k]) for x in value)
+            line += "," + str(sum([x["r_iops"] for x in value]))
+            line += "," + str(avg([x["r_lat"] for x in value]))
+            line += "," + str(sum([x["r_bw"] for x in value]))
+
+            line = line.replace("-", ",")
+            fp.write(line+"\n")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print "Usage: %s dir csv" % __file__
+        exit()
+
+    result = walk_result(sys.argv[1])
+    csv_out(result, sys.argv[2])

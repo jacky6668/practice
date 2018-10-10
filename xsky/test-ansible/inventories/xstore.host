@@ -1,0 +1,27 @@
+10.0.11.36 hostname=node01
+10.0.11.37 hostname=node02
+10.0.11.38 hostname=node03
+
+localhost ansible_connection=local
+
+[boot]
+10.0.11.36
+
+[boot:vars]
+admin_net=10.0.11.0/24
+public_net=10.0.21.0/24
+cluster_net=10.0.31.0/24
+version=3.2.6.180308.2
+#mode:build|download
+mode=build
+
+[others]
+10.0.11.37
+10.0.11.38
+
+[nodes:children]
+boot
+others
+
+[nodes:vars]
+formation_template=320example.json

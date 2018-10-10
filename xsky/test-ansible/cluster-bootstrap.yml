@@ -1,0 +1,5 @@
+---
+- hosts: boot
+  roles:
+    - role: sds.bootstrap
+      admin_ip: "{{ admin_net }}"

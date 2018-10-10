@@ -1,0 +1,65 @@
+---
+- name: "Setup arguments"
+  set_fact:
+    port: "{{ admin_port | default(8056) }}"
+    license_product: "{{ product | default('XEBS') }}"
+    license_months: "{{ months | default(1) }}"
+    license_hosts: "{{ hosts | default(999) }}"
+    license_osds: "{{ osds | default(9999) }}"
+    license_capacity: "{{ capacity | default(100) }}"
+    license_key_path: /tmp/sds_license.key
+    license_file_path: /tmp/sds_license.enc
+
+- debug:
+    msg: "Admin IP {{ ansible_host }} / {{ admin_ip }}, Port {{ admin_port }}"
+
+- debug:
+    msg:
+      - "License info:"
+      - "    product={{ license_product }}"
+      - "    months={{ license_months }}"
+      - "    hosts={{ license_hosts }}"
+      - "    osds={{ license_osds }}"
+      - "    capacity={{ license_capacity }}TB"
+
+- name: Get initial-admin-token
+  shell: cat /etc/xms/initial-admin-token
+  register: data
+  ignore_errors: yes
+
+- set_fact:
+    initial_admin_token: "{{ data.stdout | default('') }}"
+
+- debug:
+    msg: "Initial-Admin-Token: {{ initial_admin_token }}"
+
+- name: Download license key with token
+  command: xms-cli -t {{ initial_admin_token }} license download {{ license_key_path }}
+  when: initial_admin_token != ""
+
+- name: Download license key without token
+  command: xms-cli license download {{ license_key_path }}
+  when: initial_admin_token == ""
+
+- name: Download license file
+  command: >
+    curl -v http://license.xsky.com/download/
+    -X  'POST'
+    -F  'key_file=@{{ license_key_path }}'
+    -F  'po_num=PO-1234'
+    -F  'prod_name={{ license_product }}'
+    -F  'sku=SKU-1234'
+    -F  'cust_name=XSKY-TEST'
+    -F  'months={{ license_months }}'
+    -F  'capacity={{ license_capacity }}'
+    -F  'hosts={{ license_hosts }}'
+    -F  'osds={{ license_osds }}'
+    -so '{{ license_file_path }}'
+
+- name: Register license file with token
+  command: xms-cli -t {{ initial_admin_token }} license activate {{ license_file_path }}
+  when: initial_admin_token != ""
+
+- name: Register license file without token
+  command: xms-cli license activate {{ license_file path}}
+  when: initial_admin_token == ""

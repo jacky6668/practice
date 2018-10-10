@@ -1,0 +1,19 @@
+---
+- hosts: nodes
+  roles:
+    - role: sds.clearcluster
+
+- hosts: boot
+  pre_tasks:
+    - set_fact:
+        product: "X-EDP Pro"
+  roles:
+    - {role: sds.build, when: "buildmode == 'build'"}
+    - {role: sds.download, when: "buildmode == 'download'"}
+    - role: sds.bootstrap
+      admin_ip: "{{ admin_net }}"
+    - role: sds.license
+      admin_ip: "{{ ansible_host }}"
+      admin_port: 8056
+    - role: sds.formation
+      template_file: "{{ formation_template }}"

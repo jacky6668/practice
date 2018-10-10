@@ -1,0 +1,11 @@
+#!/bin/bash
+
+arch="$(uname -m)"
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=linux;;
+    Darwin*)    machine=darwin;;
+    *)          echo "Unknown machine type ${unameOut}" && exit 2;;
+esac
+
+./bin/ansible-playbook-${machine}-${arch}.pex "$@"

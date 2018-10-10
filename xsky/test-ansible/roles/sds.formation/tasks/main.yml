@@ -1,0 +1,26 @@
+---
+- debug:
+    msg: "Formation template {{ template_file }}"
+
+- name: "Check if sds-formation exists"
+  command: sds-formation -version
+
+- name: "Upload formation template"
+  copy: src=formation_templates/{{ template_file }} dest=/tmp/{{ template_file }}
+
+- name: Get initial-admin-token
+  shell: cat /etc/xms/initial-admin-token
+  register: data
+
+- set_fact:
+    initial_admin_token: "{{ data.stdout | default('') }}"
+
+- debug:
+    msg: "Initial-Admin-Token: {{ initial_admin_token }}"
+
+- fail:
+    msg: "Empty initial admin token"
+  when: initial_admin_token == ""
+
+- name: "Run formatoin"
+  command: sds-formation -f /tmp/{{ template_file }} -t {{ initial_admin_token }}

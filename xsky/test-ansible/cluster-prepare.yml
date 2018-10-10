@@ -1,0 +1,112 @@
+---
+- name: Prepare localhost
+  hosts: localhost
+  vars_files:
+    - vars/common.yml
+  tasks:
+    - block:
+      - name: cleanup keys dir
+        file: path={{ ansible_key_dir }} state=absent
+      - name: create keys dir
+        file: path={{ ansible_key_dir }} state=directory
+      tags:
+        - ssh
+
+- name: Prepare cluster nodes
+  hosts: nodes
+  vars_files:
+    - vars/common.yml
+  pre_tasks:
+    - name: Create ansible dir
+      file: path={{ item }} state=directory mode=755
+      with_items:
+        - "{{ ansible_dir }}"
+        - "{{ ansible_rpm_dir }}"
+    - name: Disable selinux
+      selinux: state=disabled
+    - name: Disable firewalld
+      systemd: name=firewalld enabled=no state=stopped
+      ignore_errors: yes
+    - block:
+      - name: Set hostname
+        hostname: name={{ hostname }}
+        ignore_errors: yes
+      - name: Overwrite /etc/hostname
+        template: src=templates/etc_hostname.j2 dest=/etc/hostname mode=0644
+      - name: Set /etc/hosts
+        template: src=templates/etc_hosts.j2 dest=/etc/hosts
+      - name: Set resolve
+        template: src=templates/etc_resolv.j2 dest=/etc/resolv.conf
+      tags:
+        - dns
+    - block:
+      - name: Setup history timestamp
+        lineinfile:
+          dest: /root/.bashrc
+          line: export HISTTIMEFORMAT='%F %T  '
+      - name: Setup history size
+        lineinfile:
+          dest: /root/.bashrc
+          line: export HISTSIZE=10000
+      tags:
+        - shell
+  roles:
+    - role: geerlingguy.ntp
+      ntp_timezone: Asia/Shanghai
+      tags: ntp
+  tasks:
+    - block:
+      - name: Install epel-release
+        yum: name="epel-release" state=latest update_cache=yes
+        tags: yum
+      - name: Install softwares from yum repo
+        yum:
+          name: "{{ item }}"
+          state: installed
+        with_items:
+          - git
+          - tmux
+          - rpm-build
+          - sysstat
+          - htop
+          - iscsi-initiator-utils
+          - lsscsi
+          - vim-enhanced
+          - device-mapper
+          - device-mapper-multipath
+          - atop
+          - psmisc
+          - screen
+          - wget
+        ignore_errors: yes
+      tags:
+        - yum
+    - block:
+      - name: Install fio
+        copy: src=fio/ dest=/usr/local/bin mode=755
+      - name: Copy iozone rpm
+        copy: src=iozone/{{ iozone_rpm }} dest={{ ansible_rpm_dir }}
+      - name: Inistall iozone
+        yum: name={{ ansible_rpm_dir }}/{{ iozone_rpm }} state=present
+      - name: Copy custom directory
+        copy: src={{ custom_dir }} dest={{ ansible_dir }}
+      tags:
+        - testtool
+    - block:
+      - name: generate ssh key
+        user: name=root generate_ssh_key=yes ssh_key_bits=4096
+      - name: fetch public key
+        fetch: src=/root/.ssh/id_rsa.pub dest={{ ansible_key_dir }}
+      tags:
+        - ssh
+
+- name: Set authorized keys
+  hosts: nodes
+  vars_files:
+    - vars/common.yml
+  tasks:
+    - name: add authorized keys
+      authorized_key: key="{{ lookup('file', '{{ ansible_key_dir }}/{{ item }}/root/.ssh/id_rsa.pub') }}" user=root
+      inventory_hostnames: nodes
+      tags:
+        - ssh

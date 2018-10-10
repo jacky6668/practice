@@ -1,0 +1,45 @@
+---
+- name: promption
+  debug:
+    msg: "Bootstrap sds cluster on {{ admin_ip }}"
+
+- name: find installer package
+  find:
+    paths: "{{ installer_dir }}"
+    patterns: "*.tar.gz"
+  register: result
+
+- name: check finding package result
+  fail:
+    msg: "There are {{ result.matched }} installer packages"
+  when: result.matched != 1
+
+- set_fact:
+    package_path: "{{ result.files.0.path }}"
+
+- debug:
+    msg: "Bootstrap sds cluster with package {{ package_path }}"
+
+- file:
+    path: "{{ package_dir }}"
+    state: absent
+
+- file:
+    path: "{{ package_dir }}"
+    state: directory
+
+- unarchive:
+    remote_src: yes
+    src: "{{ package_path }}"
+    dest: "{{ package_dir }}"
+
+- name: install boot node
+  shell: "./install.sh {{ ansible_host }}"
+  args:
+    executable: /bin/bash
+    chdir: "{{ package_dir }}"
+  register: result
+
+- fail:
+    msg: "{{ result.stdout }}"
+  when: '"failed" in result.stdout'

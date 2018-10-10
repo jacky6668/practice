@@ -1,0 +1,30 @@
+---
+- name: Clean up docker
+  hosts: nodes
+  vars_files:
+    - vars/common.yml
+  tasks:
+    - name: Kill docker progresses
+      shell: ps -ef | grep docker | grep -v run.sh | grep -v grep | grep -v "ansible" | awk '{print $2}' | xargs -I{} kill -9 {}
+      ignore_errors: yes
+    - name: Uninstall docker rpms
+      shell: rpm -qa | grep docker | xargs -I{} rpm -e --nodeps {}
+      ignore_errors: yes
+    - name: Umount /var/lib/docker/*
+      shell: cat /proc/mounts | grep /var/lib/docker | awk '{print $2}' | xargs -I{} umount -f {}
+      ignore_errors: yes
+    - name: Cleanup volume group
+      shell: vgs | grep docker | awk '{print $1}' | xargs -I{} vgremove -f {}
+      ignore_errors: yes
+    - name: Cleanup physical volume
+      shell: pvs | grep /dev/ | awk '{print $1}' | xargs -I{} pvremove -ff -y {}
+      ignore_errors: yes
+    - name: Clean up devicemapper
+      shell: dmsetup ls | grep docker | awk '{print $1}' | xargs -I{} dmsetup remove -f --retry {}
+      ignore_errors: yes
+    - name: Clean up docker dirs
+      file: path='{{item}}' state=absent
+      with_items:
+        - /etc/docker
+        - /var/lib/docker
+      ignore_errors: yes

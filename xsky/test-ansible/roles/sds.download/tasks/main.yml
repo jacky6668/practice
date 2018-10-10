@@ -1,0 +1,46 @@
+---
+- name: promption
+  debug: msg= "{{ item.name }} is {{ item.val }}"
+  with_items:
+    - { name: 'Install directory', val: '{{ install_dir }}' }
+    - { name: 'Build directory', val: '{{ build_dir }}' }
+    - { name: 'version', val: '{{ ver }}' }
+    - { name: 'buildmode', val: '{{ mode }}' }
+
+- name: clean up installer
+  file: path={{ installer_dir }} state=absent force=yes
+
+- name: Create installer dir
+  file: path={{ installer_dir }} state=directory
+
+- name: Create build dir
+  file: path={{ build_dir}} state=directory
+
+- set_fact:
+    package: "sds-installer-{{ ver }}.tar.gz"
+
+- set_fact:
+    download_site: "http://release.xsky.com"
+  when: 
+    - ver is version_compare('3.1.8', '<=')
+    - ver | match("^\d+\.\d+\.\d+$")
+
+- set_fact:
+    download_site: "http://release.xsky.com/{{ ver }}"
+  when: 
+    - ver is version_compare('3.1.8', '>')
+    - ver | match("^\d+\.\d+\.\d+$")
+
+- set_fact:
+    download_site: "http://release.xsky.com/dev/{{ ver }}"
+  when: 
+    - ver is version_compare('3.1.8', '>')
+    - ver | match("^\d+\.\d+\.\d+\.\d*")
+
+- debug:
+    msg: "{{ download_site }}/{{ package }}"
+
+- name: Download installer package
+  get_url:
+    url: "{{ download_site }}/{{ package }}"
+    dest: "{{ build_dir}}/{{ package }}"

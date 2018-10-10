@@ -1,0 +1,38 @@
+---
+- name: Clear Prometheus exporter
+  hosts: nodes
+  vars_files:
+    - vars/monitor.yml
+  tasks:
+    - name: stop exporter services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - node_exporter
+        - process_exporter
+      ignore_errors: true
+    - name: delete exporter services
+      file:
+        path: "/usr/lib/systemd/system/{{ item }}"
+        state: absent
+      with_items:
+        - node_exporter.service
+        - process_exporter.service
+    - name: reload systemd
+      command: systemctl daemon-reload
+
+- name: Clear Prometheus and Grafana service
+  hosts: monitor
+  vars_files:
+    - vars/monitor.yml
+  tasks:
+    - name: delete containers
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+        force_kill: yes
+        keep_volumes: no
+      with_items:
+        - grafana
+        - prometheus

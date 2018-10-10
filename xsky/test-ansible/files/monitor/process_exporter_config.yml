@@ -1,0 +1,6 @@
+process_names:
+    - name: "{{.ExeBase}}-{{.Matches.OsdID}}"
+      exe:
+          - ceph-osd
+      cmdline:
+          - (?P<OsdID>[0-9]+)

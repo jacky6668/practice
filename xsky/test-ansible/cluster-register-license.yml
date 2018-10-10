@@ -1,0 +1,8 @@
+---
+- hosts: boot
+  pre_tasks:
+    - debug: var=product
+  roles:
+    - role: sds.license
+      admin_ip: "{{ ansible_host }}"
+      admin_port: 8056

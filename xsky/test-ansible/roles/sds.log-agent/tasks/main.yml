@@ -1,0 +1,30 @@
+---
+- name: stop harvester
+  shell: ps -ef | grep log.io | grep -v grep | awk '{print $2}' | xargs -I{} kill -9 {}
+  when: (restart is defined and restart == "true") or (cleanup is defined and cleanup == "true")
+- meta: end_play
+  when: cleanup is defined and cleanup == "true"
+
+- name: Install epel-release
+  yum: name="epel-release" state=latest update_cache=yes
+- name: install packages
+  yum: name={{ item }}
+  with_items:
+    - gcc-c++
+    - nodejs
+
+- name: install log.io
+  npm: name={{ item }} global=yes registry=https://registry.npm.taobao.org
+  with_items:
+    - log.io
+
+- name: setting harvester
+  template: src=harvester.conf.j2 dest=~/.log.io/harvester.conf
+
+- shell: ps -ef | grep 'log.io-harvester' | grep -v grep | wc -l
+  register: ps
+- name: start harvester
+  shell: nohup /usr/bin/log.io-harvester > ~/log.io-harvester.log 2>&1
+  async: 2592000
+  poll: 0
+  when: ps.stdout == "0"
