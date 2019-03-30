@@ -1,0 +1,19 @@
+---
+- hosts: node_yibo
+  tasks:
+    - stat:
+        path: "{{ item }}"
+      delegate_to: localhost
+      with_fileglob: /etc/zfs_netconfig
+      register: local_files
+
+    #- debug: var=local_files.results
+
+    - stat:
+        path: "/etc/{{ item.stat.path | basename }}"
+      failed_when: remote_files.stat.checksum != item.stat.checksum
+      with_items: "{{ local_files.results }}"
+      register: remote_files
+      loop_control:
+        label: "{{ item.stat.path | basename }}"
+

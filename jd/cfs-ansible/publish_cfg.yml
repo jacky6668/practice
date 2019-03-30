@@ -1,0 +1,12 @@
+---
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  tasks:
+    - name: update cfg
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        #mode: "0755"
+      with_items:
+        - { src: "{{ installdir }}cfs-net", dest: "/export/jcloud-cfs/conf/" }

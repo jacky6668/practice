@@ -1,0 +1,40 @@
+---
+- debug:
+    msg: "{{ installfile }}"
+
+- debug:
+    msg: "{{ installdir }}"
+
+- name: remove old install dir
+  shell: sudo rm -rf /export/jcloud-cfs/install
+
+- name: unpackage intall tar file
+  unarchive:
+    src: "{{ installfile }}"
+    dest: "{{ cfsdir }}"
+
+- name: remove logs
+  shell: sudo rm -rf /export/jcloud-cfs/log/*
+
+- name: remove core files
+  shell: sudo rm -rf /export/core-file/*
+
+- name: update wos mds wowAdmin
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0755"
+  #debug:
+  #  msg: "{{ item.src }} to  {{ item.dest }}"
+  with_items:
+    - { src: "{{ installdir }}wos-manager", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}cfs-mds", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}wos-admin", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}cfs-perf", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}clt-bench", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}gns-bench", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}mds-bench", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}skycli", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}wostool/wos-bench.json", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}wostool/wos-bench", dest: "{{ bindir }}" }
+

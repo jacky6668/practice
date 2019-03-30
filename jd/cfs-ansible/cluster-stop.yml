@@ -1,0 +1,6 @@
+---
+- hosts: cf_yibo
+#  gather_facts: false
+#  remote_user: root
+  roles:
+     - stopservice

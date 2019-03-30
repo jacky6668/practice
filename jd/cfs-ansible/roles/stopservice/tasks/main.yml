@@ -1,0 +1,17 @@
+---
+- name: stop kfstore
+  shell: ps aux | grep wos | grep -v grep | awk  '{print $2}' | xargs -I {} kill -9 {}
+  ignore_errors: True
+
+- name: stop mds
+  shell: ps aux | grep cfs-mds | grep -v grep | awk  '{print $2}' | xargs -I {} kill -9 {}
+  ignore_errors: True
+
+- name: stop client
+  shell: ps aux | grep cfs-clt | grep -v grep | awk  '{print $2}' | xargs -I {} kill -9 {}
+  ignore_errors: True
+
+- name: stop ganesha
+  shell: ps aux | grep ganesha | grep -v grep | awk  '{print $2}' | xargs -I {} kill -9 {}
+  ignore_errors: True
+

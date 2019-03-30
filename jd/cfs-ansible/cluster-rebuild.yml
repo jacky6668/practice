@@ -1,0 +1,99 @@
+---
+- hosts: cf_yibo
+  vars_files:
+     - vars/common.yml
+  roles:
+     - stopservice
+
+- hosts: manager_yibo
+  vars_files:
+     - vars/common.yml
+  roles:
+     - rebuildmanager
+
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  roles:
+     - rebuildnode
+
+- hosts: node_yibo
+  tasks:
+    - name: mkfs
+      shell: '/export/jcloud-cfs/bin/wos-admin mkfs -c /export/jcloud-cfs/conf/wos-node.cfg'
+    - pause:
+        seconds: 5
+
+- hosts: manager_yibo
+  tasks:
+    - name: mkfs
+      shell: '/export/jcloud-cfs/bin/wos-admin fmt_mgr -c /export/jcloud-cfs/conf/wos-manager.cfg'
+    - pause:
+        seconds: 5
+
+
+- hosts: manager_yibo
+  tasks:
+    - name: start kfsmanager
+      shell: 'nohup /export/jcloud-cfs/bin/wos-manager --config=/export/jcloud-cfs/conf/wos-manager.cfg > /export/jcloud-cfs/log/wos-manager.out 2>&1 &'
+    - pause:
+        seconds: 5
+
+- hosts: node_yibo
+  tasks:
+    - name: start kfsnode
+      shell: 'nohup /export/jcloud-cfs/bin/wos-node --config=/export/jcloud-cfs/conf/wos-node.cfg > /export/jcloud-cfs/log/wos-node.out 2>&1 &'
+    - pause:
+        seconds: 30
+
+- hosts: manager_yibo
+  tasks:
+    - name: start mds
+      shell: 'nohup /export/jcloud-cfs/bin/cfs-mds -config /export/jcloud-cfs/conf/cfs-mds.cfg > /export/jcloud-cfs/log/cfs-mds.out 2>&1 &'
+    - pause:
+        seconds: 20
+
+- hosts: manager_yibo
+  tasks:
+    - name: init user fs
+      shell: '/export/jcloud-cfs/bin/skycli create --fsname fugenxi_fs --tenant 00000000000000000000000000000000'
+    - pause:
+        seconds: 20
+
+- hosts: node_yibo
+  tasks:
+    - name: start client
+      shell: 'nohup /export/jcloud-cfs/bin/cfs-clt -config /export/jcloud-cfs/conf/cfs-clt.cfg > /export/jcloud-cfs/log/cfs-clt.out 2>&1 &'
+    - pause:
+        seconds: 20
+
+- hosts: node_yibo
+  tasks:
+    - name: start ganesha perfomance statistics
+      shell: 'python /export/jcloud-cfs/install/ganesha/ganeshactl/ganesha_stats.py enable fsal'
+
+- hosts: node_yibo
+  tasks:
+    - name: start ganesha
+      shell: 'nohup /export/jcloud-cfs/install/ganesha/usr/bin/ganesha.nfsd -F -f /export/jcloud-cfs/install/ganesha/etc/ganesha/ganesha.conf > /export/jcloud-cfs/log/ganesha.out 2>&1 &'
+    - pause:
+        seconds: 10
+
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  tasks:
+    - name: start ganesha dbus
+      shell: '{{ installdir }}ganesha/ganeshactl/ganesha_stats.py enable fsal'
+
+- hosts: client_yibo
+  tasks:
+    - name: umount /mnt/
+      shell: 'umount /mnt/'
+    - pause:
+        seconds: 15
+
+- hosts: client_yibo
+  tasks:
+    - name: mount /mnt
+      shell: '/root/mount.sh'
