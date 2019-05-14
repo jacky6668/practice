@@ -45,6 +45,13 @@
     - pause:
         seconds: 20
 
+- hosts: manager_yibo
+  tasks:
+    - name: scp fs1 conf
+      shell: 'scp /root/yibo/ganeshaconf/ganesha36 root@192.168.245.36:/export/jcloud-cfs/install/ganesha/etc/ganesha/ganesha.conf'
+    - name: scp fs2 conf
+      shell: 'scp /root/yibo/ganeshaconf/ganesha41 root@192.168.245.41:/export/jcloud-cfs/install/ganesha/etc/ganesha/ganesha.conf'
+
 - hosts: node_yibo
   tasks:
     - name: start ganesha perfomance statistics
@@ -63,6 +70,20 @@
   tasks:
     - name: start ganesha dbus
       shell: '{{ installdir }}ganesha/ganeshactl/ganesha_stats.py enable fsal'
+
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  tasks:
+    - name: start ganesha dbus
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin enable-super-recycle --addr "127.0.0.1:20000"'
+
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  tasks:
+    - name: start ganesha dbus
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin get-super-recycle-status --addr "127.0.0.1:20000"'
 
 - hosts: client_yibo
   tasks:

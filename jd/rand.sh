@@ -3,8 +3,8 @@
 set -x
 
 ipaddr=()
-downtime=60
-uptime=300
+downtime=
+uptime=
 
 check_kill(){
     echo check kill status
@@ -70,6 +70,18 @@ node() {
     check_kill $1 wos-node
     echo start $1 node at ${date}
     ssh root@$1 "nohup /export/jcloud-cfs/bin/wos-node --config=/export/jcloud-cfs/conf/wos-node.cfg > /export/jcloud-cfs/log/wos-node.out${date} 2>&1 &"
+    status=$(ssh root@$1 "/export/jcloud-cfs/bin/cfstool/wos-tool get-node-status --addr 127.0.0.1:20000 | grep Status | awk  '{print \$2}'")
+    time=0
+    while [ ${status}x != ACTx ]
+    do
+        status=$(ssh root@$1 "/export/jcloud-cfs/bin/cfstool/wos-tool get-node-status --addr 127.0.0.1:20000 | grep Status | awk  '{print \$2}'")
+        echo $1 ${status}
+        sleep 10
+        ((time+=10))
+        echo "node reload during ${time}s"
+    done
+    ssh root@$1 "echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin enable-super-recycle --addr 127.0.0.1:20000"
+    ssh root@$1 "echo yes | /export/jcloud-cfs/bin/cfstool/wos-tool get-super-recycle-status --addr 127.0.0.1:20000"
     sleep ${uptime}
 }
 
@@ -110,7 +122,7 @@ do
     ip=${ipaddr[$index]}
     echo ${ip}
 
-    if [ $ip = "192.168.245.44" ];then
+    if [ $ip = "192.168.245.175" ];then
        index1=$(($RANDOM%${#service1[@]}))
        ser=${service1[$index1]}
        $ser $ip

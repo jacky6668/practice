@@ -20,14 +20,14 @@
 - hosts: node_yibo
   tasks:
     - name: mkfs
-      shell: '/export/jcloud-cfs/bin/wos-admin mkfs -c /export/jcloud-cfs/conf/wos-node.cfg'
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin mkfs -c /export/jcloud-cfs/conf/wos-node.cfg'
     - pause:
         seconds: 5
 
 - hosts: manager_yibo
   tasks:
     - name: mkfs
-      shell: '/export/jcloud-cfs/bin/wos-admin fmt_mgr -c /export/jcloud-cfs/conf/wos-manager.cfg'
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin fmt_mgr -c /export/jcloud-cfs/conf/wos-manager.cfg'
     - pause:
         seconds: 5
 
@@ -36,6 +36,13 @@
   tasks:
     - name: start kfsmanager
       shell: 'nohup /export/jcloud-cfs/bin/wos-manager --config=/export/jcloud-cfs/conf/wos-manager.cfg > /export/jcloud-cfs/log/wos-manager.out 2>&1 &'
+    - pause:
+        seconds: 60
+
+- hosts: manager_yibo
+  tasks:
+    - name: create node group
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin add-node-group -a 127.0.0.1:20000 -s 110 -e 150'
     - pause:
         seconds: 5
 
@@ -55,10 +62,14 @@
 
 - hosts: manager_yibo
   tasks:
-    - name: init user fs
-      shell: '/export/jcloud-cfs/bin/skycli create --fsname fugenxi_fs --tenant 00000000000000000000000000000000'
-    - pause:
-        seconds: 20
+    - name: create test fs1
+      shell: 'echo YES | /export/jcloud-cfs/bin/cfstool/sky-admin createfs --fsname testfs_1 --tenantid 00000000000000000000000000000000'
+    - name: create test fs2
+      shell: 'echo YES | /export/jcloud-cfs/bin/cfstool/sky-admin createfs --fsname testfs_2 --tenantid 00000000000000000000000000000000'
+    - name: scp fs1 conf
+      shell: 'scp /root/yibo/ganeshaconf/ganesha36 root@192.168.245.36:/export/jcloud-cfs/install/ganesha/etc/ganesha/ganesha.conf'
+    - name: scp fs2 conf
+      shell: 'scp /root/yibo/ganeshaconf/ganesha41 root@192.168.245.41:/export/jcloud-cfs/install/ganesha/etc/ganesha/ganesha.conf'
 
 - hosts: node_yibo
   tasks:
@@ -85,6 +96,20 @@
   tasks:
     - name: start ganesha dbus
       shell: '{{ installdir }}ganesha/ganeshactl/ganesha_stats.py enable fsal'
+
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  tasks:
+    - name: start ganesha dbus
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-admin enable-super-recycle --addr "127.0.0.1:20000"'
+
+- hosts: node_yibo
+  vars_files:
+     - vars/common.yml
+  tasks:
+    - name: start ganesha dbus
+      shell: 'echo yes | /export/jcloud-cfs/bin/cfstool/wos-tool get-super-recycle-status --addr "127.0.0.1:20000"'
 
 - hosts: client_yibo
   tasks:

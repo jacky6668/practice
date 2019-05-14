@@ -8,6 +8,9 @@
 - name: remove old install dir
   shell: sudo rm -rf /export/jcloud-cfs/install
 
+- name: remove bin
+  shell: sudo rm -rf /export/jcloud-cfs/bin/*
+
 - name: unpackage intall tar file
   unarchive:
     src: "{{ installfile }}"
@@ -23,12 +26,5 @@
   with_items:
     - { src: "{{ installdir }}wos-manager", dest: "{{ bindir }}" }
     - { src: "{{ installdir }}cfs-mds", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}wos-admin", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}cfs-perf", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}clt-bench", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}gns-bench", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}mds-bench", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}skycli", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}wostool/wos-bench.json", dest: "{{ bindir }}" }
-    - { src: "{{ installdir }}wostool/wos-bench", dest: "{{ bindir }}" }
+    - { src: "{{ installdir }}cfstool", dest: "{{ bindir }}" }
 
