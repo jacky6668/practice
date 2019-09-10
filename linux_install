@@ -1,0 +1,76 @@
+1.google_chrome
+ sudo wget https://repo.fdzh.org/chrome/google-chrome.list -P /etc/apt/sources.list.d/
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub  | sudo apt-key add -
+sudo apt-get update
+sudo apt-get install google-chrome-stable
+/usr/bin/google-chrome-stable
+lock to lancher
+
+2.google_pinyin
+sudo apt-get install fcitx-googlepinyin
+在settings->Language Support里将keyboard input method system设置为fcitx
+注销系统，再登录
+在settings->Text Entry里，添加输入源，搜索google-pinyin添加即可
+
+3.k-vim
+sudo apt-get install ctags build-essential cmake python-dev silversearcher-ag git
+wget https://bootstrap.pypa.io/get-pip.py  --no-check-certificate
+sudo python get-pip.py
+sudo pip install pyflakes pylint pep8
+git clone https://github.com/wklken/k-vim.git
+cd k-vim/
+sh -x install.sh
+
+L can't move to next line: close whichwrap,ww
+set 79 column high light: set cc=79
+
+4.install go on mac
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install go
+go version
+go env
+
+go get github.com/jstemmer/gotags
+vim-go
+gocode
+参考：https://blog.csdn.net/zhang197093/article/details/78559903?locationNum=5&fps=1
+
+export GOPATH=$HOME/Documents/Source
+export GOROOT=/usr/local/opt/go/libexec
+export GOBIN=$GOROOT/bin
+export PATH=$PATH:$GOBIN:$GOROOT/bin
+
+https://www.cnblogs.com/Leo_wl/p/8242628.html
+关于go开发目录的结构这里不做过多解释，之前已经说过了
+进行如下命令进行目录切换：
+cd %GOPATH%\src\github.com\golang
+我这里的GOPATH是在D:\go_project
+如果src目录下面没有github.com\golang请自行创建
+
+完成目录切换后，开始下载插件包：
+git clone https://github.com/golang/tools.git tools
+
+当下载完成后，你会发现%GOPATH%\src\github.com\golang多了一个tools目录
+需要把tools目录下的所有文件拷贝到%GOPATH%\src\golang.org\x\tools下，如果没有自行创建
+当然如果你是windows环境，如果你当前是在%GOPATH%\src\golang.org\x\tools
+目录下，你可以直接使用如下命令进行拷贝：
+xcopy /s /e %GOPATH%\src\github.com\golang\tools
+关于这个命令的使用可以具体百度查看，如果对该命令不熟悉就手动拷贝,直接将你下载的tools目录下的所有文件拷贝到%GOPATH%\src\golang.org\x\tools目录下
+
+经过多次测试，插件中有几个其实不用翻墙或其他方法就可以安装成功：
+go get github.com/ramya-rao-a/go-outline
+go get github.com/uudashr/gopkgs/cmd/gopkgs
+go get github.com/ramya-rao-a/go-outline
+go get github.com/acroca/go-symbols
+go get golang.org/x/tools/cmd/guru
+go get golang.org/x/tools/cmd/gorename
+go get github.com/fatih/gomodifytags
+go get github.com/haya14busa/goplay/cmd/goplay
+go get github.com/josharian/impl
+go get github.com/rogpeppe/godef
+go get github.com/sqs/goreturns
+go get github.com/golang/lint/golint
+go get github.com/cweill/gotests/gotests
+go get github.com/derekparker/delve/cmd/dlv
+go get github.com/bradfitz/goimports
+这样vscode下go开发需要安装的插件都已经安装成功
