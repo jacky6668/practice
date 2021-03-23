@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x 
+set -x
 
 start_iperf_server(){
     ssh -t root@10.211.80.100 "screen -dmS iperf_server1; screen -x -S iperf_server1 -p 0 -X stuff 'iperf3 -s -p 5201''\n'"

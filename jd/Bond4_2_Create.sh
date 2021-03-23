@@ -12,10 +12,23 @@
 # License:     GPL
 # -------------------------------------------------------------------------------
 
-set -x
+#set -x
+
+key_word="zbs|cfs|wos|ha-monitor|ha-agent|docker|qemu|nbd"
+
+check_service(){
+    index=$(ps axf | grep -E ${key_word} | grep -v grep)
+
+    if [ ${#index} -gt 0 ];then
+        echo "There are at least one process of ZBS or CFS, please check it manually!!"
+        exit 1
+    else
+        echo "check pass"
+    fi
+}
 
 check_network(){
-    device1=$(ls -l /sys/class/net |grep `lspci |grep -E "10-Gigabit|10GbE|SFP+|Lx" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
+    device1=$(ls -l /sys/class/net |grep `lspci |grep "Ethernet controller" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
     if [ ${device1}X == "eth1X" ];then
         echo "eth1 works"
     else
@@ -25,13 +38,12 @@ check_network(){
 }
 
 load_bongding_driver(){
-    mode=$(cat /boot/config-3.10.0-693.el7.x86_64 | grep -i bonding | awk -F '=' '{print $2}')
+    mode=$(cat /boot/config-* | grep -i bonding | awk -F '=' '(NR==1){print $2}')
     if [ ${mode}X == "mX" ];then
         echo "bonding dirver can be loaded"
     else
         echo "mode is ${mode}, please check it with commond:"
         echo "cat /boot/config-3.10.0-693.el7.x86_64 | grep -i bonding"
-        exit 1
     fi
 
 cat <<EOF > /etc/modprobe.d/bond.conf
@@ -97,10 +109,8 @@ SLAVE=yes
 USERCTL=no
 EOF
 
-    device0="eth0"
-    device1=$(ls -l /sys/class/net |grep `lspci |grep -E "10-Gigabit|10GbE|SFP+|Lx" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
-    net_mac0=$(cat /sys/class/net/${device0}/address)
-    net_mac1=$(cat /sys/class/net/${device1}/address)
+    net_mac0=$(grep eth0 /etc/udev/rules.d/70-persistent-net.rules | awk -F '"' '{print $8}')
+    net_mac1=$(grep eth1 /etc/udev/rules.d/70-persistent-net.rules | awk -F '"' '{print $8}')
     echo "HWADDR=${net_mac0}" >> ifcfg-eth0
     echo "HWADDR=${net_mac1}" >> ifcfg-eth1
 }
@@ -129,11 +139,36 @@ restart_network_quiet(){
     systemctl restart network.service
 }
 
+reboot(){
+    read -r -p "Would you like to reboot this server? [Y|y/N|n] " input
+    case $input in
+        [yY][eE][sS]|[yY])
+            echo "Your's answer is: Yes"
+            shutdown -r now
+            ;;
+        [nN][oO]|[nN])
+            echo "Your's answer is: No"
+            exit 1
+            ;;
+        *)
+            echo "Invalid input..."
+            exit 1
+            ;;
+    esac
+}
+
+reboot_quiet(){
+    shutdown -r now
+}
+
 ####main
+check_service
 check_network
 load_bongding_driver
 bak_net_conf
 generate_bond0
 generate_eth0_and_eth1
 #restart_network
-restart_network_quiet
+#restart_network_quiet
+#reboot
+reboot_quiet

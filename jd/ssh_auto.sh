@@ -2,8 +2,8 @@
 
 et -ex
 
-user_name="root"
-pass_word="Xuanyun2019"
+user_name="XXXX"
+pass_word="YYYY"
 
 # 密钥对不存在则创建密钥
 [ ! -f /root/.ssh/id_rsa.pub ] && ssh-keygen -t rsa -p '' &>/dev/null

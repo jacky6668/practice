@@ -1,8 +1,0 @@
----
-installfile: /export/jcloud-cfs/install.tar.gz
-cfsdir: /export/jcloud-cfs/
-installdir: /export/jcloud-cfs/install/
-bindir: /export/jcloud-cfs/bin/
-confdir: /export/jcloud-cfs/conf/
-logdir: //export/jcloud-cfs/log/
-

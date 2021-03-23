@@ -1,7 +1,0 @@
----
-- hosts: node_yibo 
-  tasks:
-    - name: ping every hosts
-      ping:
-    - name: test case
-      shell: echo "hehe"

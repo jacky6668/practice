@@ -12,7 +12,68 @@
 # License:     GPL
 # -------------------------------------------------------------------------------
 
-set -x
+#set -x
+
+key_word="zbs|cfs|wos|ha-monitor|ha-agent|docker|qemu|nbd"
+
+check_service(){
+    index=$(ps axf | grep -E ${key_word} | grep -v grep)
+
+    if [ ${#index} -gt 0 ];then
+        echo "There are at least one process of ZBS or CFS, please check it manually!!"
+        exit 1
+    else
+        echo "check pass"
+    fi
+}
+
+hw_check(){
+    # check vender, HW's Mellanox net device cant be bond
+    vender=$(dmidecode -t 1 | grep Manufacturer | awk -F ' ' '{print$2}')
+    if [ ${vender}X = 'Huawei'X ];then
+        # check eth0
+        slot_eth0=$(ls -l /sys/class/net  | grep eth0 | awk -F"/" '{print $(NF-2)}' | awk -F '0000:' '{print $2}')
+        if_mallaonx_0=$(lspci |grep "Ethernet controller" | grep ${slot_eth0} | grep -i "Mellanox")
+        if_intel_0=$(lspci |grep "Ethernet controller" | grep ${slot_eth0} | grep -i "Intel")
+        if [ ${#if_mallaonx_0} -gt 0 ];then
+            echo "eth0 is Mellanox, failed!!!"
+            exit 1
+        elif [ ${#if_intel_0} -gt 0 ];then
+            echo "eth0 is Intel, pass"
+        else
+            echo "eth0 is neither Intel nor Mellanox, failed!!!"
+            exit 1
+        fi
+
+        # check eth1
+        slot_eth1=$(ls -l /sys/class/net  | grep eth1 | awk -F"/" '{print $(NF-2)}' | awk -F '0000:' '{print $2}')
+        if_mallaonx_1=$(lspci |grep "Ethernet controller" | grep ${slot_eth1} | grep -i "Mellanox")
+        if_intel_1=$(lspci |grep "Ethernet controller" | grep {$slot_eth1} | grep -i "Intel")
+        if [ ${#if_mallaonx_1} -gt 0 ];then
+            echo "eth1 is Mellanox, failed!!!"
+            exit 1
+        elif [ ${#if_intel_1} -gt 0 ];then
+            echo "eth1 is Intel, pass"
+        else
+            echo "eth1 is neither Intel nor Mellanox, failed!!!"
+            exit 1
+        fi
+    fi
+}
+
+inspur_check(){
+    # check vender, InspurM5 can be bond
+    vender=$(dmidecode -t 1 | grep Manufacturer | awk -F ' ' '{print$2}')
+    if [ ${vender}X = 'Inspur'X ];then
+        mode=$(dmidecode -t 1 | grep 'Product Name' | awk -F ' ' '{print$3}' | grep M5)
+        if [ ${#mode} -gt 0 ];then
+            echo "InspurM5, pass"
+        else
+            echo "mode is not M5, failed!!!"
+            exit 1
+        fi
+    fi
+}
 
 bak_net_conf(){
     cd /etc/sysconfig/network-scripts/
@@ -62,13 +123,17 @@ generate_eth1(){
     sed -i '/ONBOOT/aIPADDR=' ifcfg-eth1
     sed -i '/HWADDR/d' ifcfg-eth1
 
-    net_name=$(ls -l /sys/class/net |grep `lspci |grep -E "10-Gigabit|10GbE|SFP+|Lx" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
+    net_name=$(ls -l /sys/class/net |grep `lspci |grep "Ethernet controller" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
     net_mac1=$(cat /sys/class/net/${net_name}/address)
-    if [ -n "${net_name}" ] && [ -n "${net_mac1}" ];then
+    if [ -z "${net_name}" ] && [ -z "${net_mac1}" ];then
         echo "cant get ${net_name}'s MAC'"
         exit 1
     fi
     sed -i "/GATEWAY/aHWADDR=${net_mac1}" ifcfg-eth1
+
+    if [ ! -f bak_ifcfg-${net_name} ];then
+        mv ifcfg-${net_name} bak_ifcfg-${net_name}
+    fi
 }
 
 modify_grub(){
@@ -97,13 +162,14 @@ modify_rule(){
     sudo rm -rf 70-persistent-net.rules
     touch 70-persistent-net.rules
     device0="eth0"
-    device1=$(ls -l /sys/class/net |grep `lspci |grep -E "10-Gigabit|10GbE|SFP+|Lx" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
+    device1=$(ls -l /sys/class/net |grep `lspci |grep "Ethernet controller" |awk '(NR==2){print $1}'` |awk -F"/" '{print $NF}')
     net_mac0=$(cat /sys/class/net/${device0}/address)
     net_mac1=$(cat /sys/class/net/${device1}/address)
     echo "SUBSYSTEM==\"net\",ACTION==\"add\",DRIVERS==\"?*\",ATTR{address}==\"${net_mac0}\",ATTR{type}==\"1\" ,KERNEL==\"eth*\",NAME=\"eth0\"" > 70-persistent-net.rules
     echo "SUBSYSTEM==\"net\",ACTION==\"add\",DRIVERS==\"?*\",ATTR{address}==\"${net_mac1}\",ATTR{type}==\"1\" ,KERNEL==\"eth*\",NAME=\"eth1\"" >> 70-persistent-net.rules
 
-    echo "HWADDR=${net_mac1}" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+    #echo "HWADDR=${net_mac1}" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+    sed -i 's/ONBOOT=no/ONBOOT=yes/g' /etc/sysconfig/network-scripts/ifcfg-eth1
 }
 
 reboot(){
@@ -130,6 +196,9 @@ reboot_quiet(){
 
 
 ####main
+check_service
+hw_check
+inspur_check
 bak_net_conf
 generate_eth1
 modify_grub

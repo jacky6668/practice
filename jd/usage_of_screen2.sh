@@ -10,11 +10,6 @@
 set -ex
 
 client="
-192.168.245.44
-192.168.245.170
-192.168.245.106
-192.168.245.143
-192.168.245.139
 "
 
 killscreen() {
@@ -22,13 +17,12 @@ killscreen() {
 	do
 		ssh root@${i} "screen -ls | grep -E \"vdbench|test|mdtest|fstst|fsbench|rand|mdscheck\"| awk '{print \$1}' | xargs -I {} screen -S {} -X quit"
 	done
-	
 	sudo rm -rf /root/mds-check-log
 }
 
 #clean cluste1 vol
 cleancluster() {
-	ssh root@192.168.245.102 "~/yibo/cleancluster1.sh"
+	ssh root@<IP> "~/yibo/cleancluster1.sh"
 }
 
 #build
